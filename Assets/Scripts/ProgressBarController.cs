@@ -12,7 +12,7 @@ public class ProgressBarController : MonoBehaviour {
 	[Range(0,1)]
 	public float progress = 0;
 	private float prevProgress;
-	public Repeater repeaterObject;
+	public ObjectRepeater repeaterObject;
 	
 
 	// Use this for initialization

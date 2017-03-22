@@ -39,8 +39,8 @@ public class mainProgram : MonoBehaviour
 	public CircularSineWave wave_1;
 	public CircularSineWave wave_2;
 	private InputBoxController inputController;
-	private MessageBoxController msgController;
-	private GameObject black;
+	private MessageBoxController messageBoxController;
+	private GameObject blackSprite;
 	private GameObject satellite;
 	private GameObject lowBatteryIcon;
 	private ProgressBarController progressBarController;
@@ -53,7 +53,6 @@ public class mainProgram : MonoBehaviour
 	private float joystickX = 0f;
 	private float joystickY = 0f;
 	private float satelliteInitialScale = 67.97f;
-	private bool satelliteEasyFind = true;
 	private int encoderPosition = 0;
 	public int[] pots = {0,0,0,0,0};
 	public const int samples = 20;
@@ -62,7 +61,7 @@ public class mainProgram : MonoBehaviour
 	private string buttonsData = "0000000000000000000000000000000000000000";
 	private bool buttonDataInitialized = false;
 	public WindowGrid windowGrid;
-	public Archivecontroller archieve;
+	public ArchiveController archive;
 	private GameObject[] regions;
 	public Text regionLabel;
 	public Text iqLabel;
@@ -136,7 +135,7 @@ public class mainProgram : MonoBehaviour
 		CircularSineWaveVis.enabled = false;
 		graphDisplay.enabled = false;
 
-		black = GameObject.Find ("Black");
+		blackSprite = GameObject.Find ("Black");
 		inputBox = GameObject.Find ("InputWindow");
 		satellite = GameObject.Find ("Satellite");
 		radar = GameObject.Find ("Radar");
@@ -154,7 +153,7 @@ public class mainProgram : MonoBehaviour
 		inputController = inputBox.GetComponent<InputBoxController> ();
 		unlockObject = unlockPanel.GetComponent<UnlockObject> ();
 		radarController = radar.GetComponent<SatSearchBarController> ();
-		msgController = messageBox.GetComponent<MessageBoxController> ();
+		messageBoxController = messageBox.GetComponent<MessageBoxController> ();
 		progressBarController = progressBar.GetComponent<ProgressBarController> ();
 		timerController = GameObject.Find ("timerText").GetComponent<timer> ();
 
@@ -185,7 +184,7 @@ public class mainProgram : MonoBehaviour
 		mainCamera.GetComponent<CameraFilterPack_FX_Glitch1> ().enabled = false;
 		mainCamera.GetComponent<CameraFilterPack_TV_BrokenGlass> ().enabled = false;
 
-
+		archive.messageBoxController = messageBoxController;
 
 		regionLabels = new string[] {
 			"All/Все",
@@ -239,22 +238,25 @@ public class mainProgram : MonoBehaviour
 
 	void calculateReactorLoad ()
 	{
-		int temp = 13;
+		float load = 13f;
+
+		//Прибавляем состояния разных выключателей на панели к нагрузке
 		
-		temp += SyncEnabled.GetHashCode () * (syncX.GetHashCode () + syncY.GetHashCode ());
-		temp += PK_Enabled.GetHashCode () + BSM_Enabled.GetHashCode () + AZ_Enabled.GetHashCode ();
-		temp += Reserve_Enabled.GetHashCode () * (GSM_Enabled.GetHashCode () + LTE_Enabled.GetHashCode () + Wifi_Enabled.GetHashCode () + Antenna_Enabled .GetHashCode () + Dish_Enabled.GetHashCode ());
+		load += SyncEnabled.GetHashCode () * (syncX.GetHashCode () + syncY.GetHashCode ());
+		load += PK_Enabled.GetHashCode () + BSM_Enabled.GetHashCode () + AZ_Enabled.GetHashCode ();
+		load += Reserve_Enabled.GetHashCode () * (GSM_Enabled.GetHashCode () + LTE_Enabled.GetHashCode () + Wifi_Enabled.GetHashCode () + Antenna_Enabled .GetHashCode () + Dish_Enabled.GetHashCode ());
 		
-		temp += (regionSelect == 0) ? 12 : 2;
-		temp += (iqSelect == 0) ? 12 : 2;
-		temp += (ageSelect == 0) ? 12 : 2;
-		temp += firewall.GetHashCode ();
+		load += (regionSelect == 0) ? 12 : 2;
+		load += (iqSelect == 0) ? 12 : 2;
+		load += (ageSelect == 0) ? 12 : 2;
+		load += firewall.GetHashCode ();
+
+		//test
+		//GameObject.Find ("Loadtext").GetComponent<Text> ().text = "" + temp;
 		
-		GameObject.Find ("Loadtext").GetComponent<Text> ().text = "" + temp;
+		load = load / 30f;
 		
-		float load = temp / 30f;
-		
-		if (load > powerPanel.currentCapacity && state >= STATE_SATELLITE_LOCKED) {
+		if (load > powerPanel.currentCapacity) {
 			lowPowerWarning.SetActive (true);
 		} else {
 			lowPowerWarning.SetActive (false);
@@ -269,20 +271,12 @@ public class mainProgram : MonoBehaviour
 
 		temperature = Mathf.Clamp (temperature, 0f, powerPanel.currentCapacity * (1206 * 0.5f));
 
-		/*if(powerPanel.cores[0].isOn && !powerPanel.cores[1].isOn){
-			powerPanel.cores[0].loadLevel = Mathf.Min(temp/30f,1f);
-		} else if(powerPanel.cores[0].isOn && powerPanel.cores[1].isOn){
-			powerPanel.cores[0].loadLevel = powerPanel.cores[1].loadLevel = temp/60f;
-		}
-
-		OneCoreWarning.SetActive(!(powerPanel.cores[0].isOn && powerPanel.cores[1].isOn));*/
-		
-		
 		//29+18=48 + 12 = 60;
 		
 		
 	}
 
+	// сглаживаем данные потенциометров по времени
 	void updatePotReadings ()
 	{
 		float temp;
@@ -296,6 +290,7 @@ public class mainProgram : MonoBehaviour
 		}
 	}
 
+	// отображаем позиции физических потенциометров на экране
 	void updatePotVisuals ()
 	{
 
@@ -312,7 +307,8 @@ public class mainProgram : MonoBehaviour
 
 		wave_2.delay = encoderPosition * 0.1f;
 	}
-	
+
+	// Обновляем данные о выбранных демографических категориях
 	void updateSelection ()
 	{
 
@@ -336,6 +332,7 @@ public class mainProgram : MonoBehaviour
 		//
 	}
 
+	// Считаем показатель охлаждения реактора и проверяем на победу
 	void calculateCooling ()
 	{
 		int temp = 0;
@@ -363,11 +360,15 @@ public class mainProgram : MonoBehaviour
 	void Update ()
 	{
 		UpdateSerial ();
-		updatePotReadings ();
-		updatePotVisuals ();
-		updateSelection ();
-		calculateReactorLoad ();
-		calculateCooling ();
+
+		if (state >= STATE_SATELLITE_LOCKED) {
+
+			updatePotReadings ();
+			updatePotVisuals ();
+			updateSelection ();
+			calculateReactorLoad ();
+			calculateCooling ();
+		}
 
 		//test
 		/*if(Input.GetKeyUp(KeyCode.R)){
@@ -427,9 +428,7 @@ public class mainProgram : MonoBehaviour
 
 			}
 		} else if (state == STATE_SATELLITE_DISCONNECTED_SCREEN) {
-			/*if( (joystickX != 0 || joystickY != 0) && msgController.on){
-				hideMessageBox();
-			}*/
+
 			if (standaloneDebug) {
 
 				joystickX = Input.GetKey (KeyCode.RightArrow).GetHashCode () + Input.GetKey (KeyCode.LeftArrow).GetHashCode () * -1;
@@ -441,38 +440,24 @@ public class mainProgram : MonoBehaviour
 			radarController.velocity.y = joystickY * 10;
 
 
-			if (satelliteEasyFind) {
-				if (radarController.progress > 0.7f && radarController.progress < 0.95f) {
-					Vector3 tempVec = satellite.transform.localScale;
-					tempVec.x = tempVec.y = tempVec.z = (radarController.progress - 0.7f) / 0.3f * satelliteInitialScale;
-					satellite.transform.localScale = tempVec;
-					
-				} else if (radarController.progress > 0.95f) {
-					state = STATE_SATELLITE_LOCKED;
-					SerialComm.WriteToArduino ("#S"); //SATELLITE LOCKED COMMAND
-					radarController.locked = true;
-					satellite.transform.localScale = new Vector3 (satelliteInitialScale, satelliteInitialScale, satelliteInitialScale);
-					//satellite.GetComponent<DOTweenAnimation>().DOPlayForward();
-					//DOTween.PlayForward ("satelliteShow");
-					DOTween.PlayForward ("SatelliteSearchTextFade");
-					if (!windowGrid.enabled) {
-						windowGrid.enabled = true;
-					}
-				} 
-			} else {
-				if (radarController.progress > 0.95f) {
-					state = STATE_SATELLITE_LOCKED;
-					SerialComm.WriteToArduino ("#S"); //SATELLITE LOCKED COMMAND
-					radarController.locked = true;
-					satellite.transform.localScale = new Vector3 (satelliteInitialScale, satelliteInitialScale, satelliteInitialScale);
-					//satellite.GetComponent<DOTweenAnimation>().DOPlayForward();
-					DOTween.PlayForward ("SatelliteSearchTextFade");
-					//DOTween.PlayForward ("satelliteShow");
-					if (!windowGrid.enabled) {
-						windowGrid.enabled = true;
-					}
-				} 
-			}
+			if (radarController.progress > 0.7f && radarController.progress < 0.95f) {
+				Vector3 tempVec = satellite.transform.localScale;
+				tempVec.x = tempVec.y = tempVec.z = (radarController.progress - 0.7f) / 0.3f * satelliteInitialScale;
+				satellite.transform.localScale = tempVec;
+				
+			} else if (radarController.progress > 0.95f) {
+				state = STATE_SATELLITE_LOCKED;
+				SerialComm.WriteToArduino ("#S"); //SATELLITE LOCKED COMMAND
+				radarController.locked = true;
+				satellite.transform.localScale = new Vector3 (satelliteInitialScale, satelliteInitialScale, satelliteInitialScale);
+				//satellite.GetComponent<DOTweenAnimation>().DOPlayForward();
+				//DOTween.PlayForward ("satelliteShow");
+				DOTween.PlayForward ("SatelliteSearchTextFade");
+				if (!windowGrid.enabled) {
+					windowGrid.enabled = true;
+				}
+			} 
+			 
 		} else if (state == STATE_SATELLITE_LOCKED) {
 
 			if (usbDriveConnected) {
@@ -521,8 +506,10 @@ public class mainProgram : MonoBehaviour
 				timerController.paused = true;
 
 				//AudioController.Play("SatelliteRollback");
+
+				//Перекрасить спутник в красный
 				foreach (Transform child in satellite.transform) {
-					//child is your child transform
+
 					child.gameObject.GetComponent<Renderer> ().material = satelliteRed;
 				}
 				state = STATE_HACKED;
@@ -531,7 +518,7 @@ public class mainProgram : MonoBehaviour
 				DOTween.PlayForward ("hackWindowHide");
 				progressBarController.progress = 0;
 				GameObject.Find ("HackingVideo").GetComponent<videoAnim> ().pause ();
-				//TEST OVERHEAT FROM FLASH
+				//TEST OVERHEAT FROM FLASH DRIVE
 				if (!overheatSent) {
 					SerialComm.WriteToArduino ("#E");
 					mainCamera.GetComponent<CameraFilterPack_FX_Glitch1> ().enabled = true;
@@ -545,35 +532,6 @@ public class mainProgram : MonoBehaviour
 		}
 
 
-	}
-
-	public void showMessageBox (string title, string text, float stayFor=2f)
-	{
-		if (msgController.on) {
-			StopCoroutine ("delayedhideMessageBox");
-			msgController.createMessageBox (title, text);
-		} else {
-			messageBox.SetActive (true);
-			messageBox.GetComponent<DOTweenAnimation> ().DOPlayBackwards ();
-			msgController.createMessageBox (title, text);
-		}
-
-		StartCoroutine ("delayedhideMessageBox", stayFor);
-
-	}
-
-	IEnumerator delayedhideMessageBox (float delay)
-	{
-		yield return new WaitForSeconds (delay);  
-		hideMessageBox ();
-		yield break;
-
-	}
-
-	void hideMessageBox ()
-	{
-		messageBox.GetComponent<DOTweenAnimation> ().DOPlayForward ();
-		StartCoroutine ("delayeddisableMessageBox", 1f);
 	}
 
 	IEnumerator delayedStartSatReboot ()
@@ -600,7 +558,7 @@ public class mainProgram : MonoBehaviour
 		
 		messageBox.SetActive (true);
 		messageBox.GetComponent<DOTweenAnimation> ().DOPlayBackwards ();
-		msgController.createMessageBox ("Satellite disconnected", "Please use the joystick to move radar. The radar will show proximity of satellite by the number of green dots.");
+		messageBoxController.createMessageBox ("Satellite disconnected", "Please use the joystick to move radar. The radar will show proximity of satellite by the number of green dots.");
 
 		
 		//Stop this coroutine
@@ -614,7 +572,7 @@ public class mainProgram : MonoBehaviour
 		yield return new WaitForSeconds (delay);  
 		
 		messageBox.SetActive (false);
-		msgController.on = false;
+		messageBoxController.on = false;
 		//Stop this coroutine
 		yield break;
 		//StopCoroutine("delayedShowMessageBox");
@@ -717,12 +675,12 @@ public class mainProgram : MonoBehaviour
 
 	void fadeToBlack ()
 	{
-		black.GetComponent<DOTweenAnimation> ().DOPlayBackwards ();
+		blackSprite.GetComponent<DOTweenAnimation> ().DOPlayBackwards ();
 	}
 
 	void fadeFromBlack ()
 	{
-		black.GetComponent<DOTweenAnimation> ().DOPlayForward ();
+		blackSprite.GetComponent<DOTweenAnimation> ().DOPlayForward ();
 		//print("FADE FROM BLACK -------------------");
 	}
 
@@ -933,16 +891,16 @@ public class mainProgram : MonoBehaviour
 			windowGrid.windowsEnabled [3] = b;
 		} else if (index == 13) { // Спутник
 			windowGrid.windowsEnabled [2] = b;
-			archieve.isOn = b;
+			archive.isOn = b;
 		} else if (index == 33 && b) {
 			//print ("Unable to stop the enslavement of the world once it's started!");
-			showMessageBox ("Error", "Unable to stop the enslavement of the world once it's started!  \n \n Невозможно остановить порабощение после его запуска!", 8f);
+			 messageBoxController.showMessageBox ("Error", "Unable to stop the enslavement of the world once it's started!  \n \n Невозможно остановить порабощение после его запуска!", 8f);
 		} else if (index == 32 && !b) {
 			//print ("Unable to stop the enslavement of the world once it's started!");
-			showMessageBox ("WARNING!", "Hacking world's nuclear missiles, nuclear apocalypse in 60 minutes!  \n \n Взлом ядерных боеголовок, атомная война через 60 минут!", 8f);
+			messageBoxController.showMessageBox ("WARNING!", "Hacking world's nuclear missiles, nuclear apocalypse in 60 minutes!  \n \n Взлом ядерных боеголовок, атомная война через 60 минут!", 8f);
 		} else if (index == 24 && !b) {
 			//print ("Unable to stop the enslavement of the world once it's started!");
-			showMessageBox ("WARNING!", "You don't wanna know what that does, but you are dead anyways... \n \n Вам лучше не знать что вы только что запустили, но жить вам осталось не долго...", 8f);
+			messageBoxController.showMessageBox ("WARNING!", "You don't wanna know what that does, but you are dead anyways... \n \n Вам лучше не знать что вы только что запустили, но жить вам осталось не долго...", 8f);
 		} else if (index == 11 && !b) {
 			powerPanel.core_1_inc ();
 		} else if (index == 10 && !b) {
@@ -953,17 +911,17 @@ public class mainProgram : MonoBehaviour
 			powerPanel.core_2_dec ();
 		} else if (index == 9) {
 			if (powerPanel.ionsPurged) {
-				showMessageBox ("ERROR!", "Can not start CORE 1! No ions detected! \n \n Не возможно запустить ЯДРО 1 при сброшенных ионах!", 8f);
+				messageBoxController.showMessageBox ("ERROR!", "Can not start CORE 1! No ions detected! \n \n Не возможно запустить ЯДРО 1 при сброшенных ионах!", 8f);
 
 			} else {
 				powerPanel.cores [0].isOn = !b;
 			}
 		} else if (index == 8) {
 			if (powerPanel.ionBlock && !b) {
-				showMessageBox ("ERROR!", "Can not start CORE 2! Ion block detected! \n \n Не возможно запустить ЯДРО 2! Обнаружен блок ионов!", 8f);
+				messageBoxController.showMessageBox ("ERROR!", "Can not start CORE 2! Ion block detected! \n \n Не возможно запустить ЯДРО 2! Обнаружен блок ионов!", 8f);
 
 			} else if (powerPanel.ionsPurged) {
-				showMessageBox ("ERROR!", "Can not start CORE 2! No ions detected! \n \n Не возможно запустить ЯДРО 2 при сброшенных ионах!", 8f);
+				messageBoxController.showMessageBox ("ERROR!", "Can not start CORE 2! No ions detected! \n \n Не возможно запустить ЯДРО 2 при сброшенных ионах!", 8f);
 				
 			} else {
 				powerPanel.cores [1].isOn = !b;
@@ -971,7 +929,7 @@ public class mainProgram : MonoBehaviour
 
 		} else if (index == 3 && !b) {
 			if (powerPanel.ionsPurged) {
-				showMessageBox ("NOTE", "Need to refill ions first. \n \n Перед увеличением скорости, нужно заменить ионы.", 8f);
+				messageBoxController.showMessageBox ("NOTE", "Need to refill ions first. \n \n Перед увеличением скорости, нужно заменить ионы.", 8f);
 			} else {
 				powerPanel.ionSpeed_inc ();
 			}
@@ -979,7 +937,7 @@ public class mainProgram : MonoBehaviour
 			powerPanel.ionSpeed_dec ();
 		} else if (index == 1 && !b) { //Сброс
 			if (!powerPanel.ionBlock) {
-				showMessageBox ("NOTE", "No Ion Errors detected, Ion purge not needed. \n \n Не обнаружены ошибки ионов, сброс не требуется.", 8f);
+				messageBoxController.showMessageBox ("NOTE", "No Ion Errors detected, Ion purge not needed. \n \n Не обнаружены ошибки ионов, сброс не требуется.", 8f);
 			} else {
 				powerPanel.ionPurge ();
 				//powerPanel.cores [0].isOn = false;
@@ -990,7 +948,7 @@ public class mainProgram : MonoBehaviour
 				powerPanel.ionRefill ();
 
 			} else {
-				showMessageBox ("NOTE", "Need to purge active ions first. \n \n Перед заменой требуется сбросить активные.", 8f);
+				messageBoxController.showMessageBox ("NOTE", "Need to purge active ions first. \n \n Перед заменой требуется сбросить активные.", 8f);
 			}
 		} else if (index == 6) { // Спутник
 			if (b) {

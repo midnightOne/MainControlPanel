@@ -2,7 +2,7 @@
 using UnityEngine.UI;
 using System.Collections;
 
-public class TextTyper : MonoBehaviour {
+public class TextAutoTyper : MonoBehaviour {
 	
 	public float letterPause = 0.2f;
 	public bool useExistingText=true;

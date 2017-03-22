@@ -1,10 +1,11 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
+using DG.Tweening;
 
 public class MessageBoxController : MonoBehaviour {
 
-	public TextTyper titleTyper;
-	public TextTyper mainTextTyper;
+	public TextAutoTyper titleTyper;
+	public TextAutoTyper mainTextTyper;
 	public bool on=false;
 
 	// Use this for initialization
@@ -16,6 +17,36 @@ public class MessageBoxController : MonoBehaviour {
 		titleTyper.typeNewText (title);
 		mainTextTyper.typeNewText (message);
 		on = true;
+	}
+
+	public void showMessageBox (string title, string text, float stayFor=2f)
+	{
+		if (on) {
+			StopCoroutine ("delayedhideMessageBox");
+			createMessageBox (title, text);
+		} else {
+
+			gameObject.SetActive (true);
+			gameObject.GetComponent<DOTweenAnimation> ().DOPlayBackwards ();
+			createMessageBox (title, text);
+		}
+		
+		StartCoroutine ("delayedhideMessageBox", stayFor);
+		
+	}
+	
+	IEnumerator delayedhideMessageBox (float delay)
+	{
+		yield return new WaitForSeconds (delay);  
+		hideMessageBox ();
+		yield break;
+		
+	}
+	
+	void hideMessageBox ()
+	{
+		gameObject.GetComponent<DOTweenAnimation> ().DOPlayForward ();
+		StartCoroutine ("delayeddisableMessageBox", 1f);
 	}
 	
 	// Update is called once per frame

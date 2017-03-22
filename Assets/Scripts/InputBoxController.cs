@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 public class InputBoxController : MonoBehaviour {
 
-	public TextTyper titleTyper;
+	public TextAutoTyper titleTyper;
 	public Text inputText;
 	public bool isOn=false;
 	private bool carpetOn = true;

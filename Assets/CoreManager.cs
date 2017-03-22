@@ -1,11 +1,11 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using UnityEngine.UI;
 
 public class CoreManager : MonoBehaviour {
 
 	public GameObject redGraphic;
-	public Repeater repeater;
+	public ObjectRepeater repeater;
 	public bool isOn = true;
 	public float powerLevel = 0f;
 	public float pulsationFreq = 0.1f;

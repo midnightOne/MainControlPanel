@@ -2,7 +2,7 @@
 using System.Collections;
 
 //[ExecuteInEditMode]
-public class Repeater : MonoBehaviour {
+public class ObjectRepeater : MonoBehaviour {
 
 	public GameObject referenceObject;
 	private Vector3 referencePosition;
@@ -97,45 +97,6 @@ public class Repeater : MonoBehaviour {
 		return pos;
 	}
 
-	// Update is called once per frame
-	void Update__ () {
-		currentCopies = Mathf.Clamp(currentCopies,0,numberOfCopies);
-		Color tempColor;
-
-		if(shift != prevShift){
-			for(int i=0;i<numberOfCopies;i++){
-				copyAarray[i].transform.localPosition = new Vector3(0,0,0) + referencePosition + shift*i;
-			}
-			prevShift = shift;
-		}
-
-		if (progressValue != prevProgress) {
-			for(int i=0;i<numberOfCopies;i++){
-
-				if(i <= Mathf.CeilToInt(currentCopies)){
-					copyAarray[i].SetActive(true);
-					if(fade){
-						if(i == Mathf.CeilToInt(currentCopies)){
-							tempColor = copyAarray[i].GetComponent<Renderer>().material.color;
-							tempColor.a = currentCopies-(i-1);
-
-							copyAarray[i].GetComponent<Renderer>().material.color = tempColor;
-						} else {
-							tempColor = copyAarray[i].GetComponent<Renderer>().material.color;
-							tempColor.a = 1;
-							
-							copyAarray[i].GetComponent<Renderer>().material.color = tempColor;
-						}
-					}
-				} else {
-					copyAarray[i].SetActive(false);
-				}
-			}
-			prevProgress = progressValue;
-		}
-		//Object.Instantiate(referenceObject, 
-		//referenceObject.
-	}
 
 	void Update(){
 		currentCopies = numberOfCopies * progressValue;//Mathf.Clamp(currentCopies,0,numberOfCopies);

@@ -1,10 +1,11 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class Archivecontroller : MonoBehaviour {
+public class ArchiveController : MonoBehaviour {
 
 	public mainProgram main;
 	public InputBoxController input;
+	public MessageBoxController messageBoxController;
 	public bool fileReceived = false;
 
 	// Use this for initialization
@@ -19,11 +20,11 @@ public class Archivecontroller : MonoBehaviour {
 			if(input.inputString == "F4L79" && !fileReceived){
 				main.dropCapsule();
 				input.inputString = "";
-				main.showMessageBox("Info", "Please receive the file capsule through the mechanized archieve tube. \n \n Пожалуйста, получите капсулу с файлом через трубу механизованного архива.", 8f);
+				messageBoxController.showMessageBox("Info", "Please receive the file capsule through the mechanized archieve tube. \n \n Пожалуйста, получите капсулу с файлом через трубу механизованного архива.", 8f);
 				fileReceived = true;
 			} else {
 				input.inputString = "";
-				main.showMessageBox("Error", "There was an error while retrieving the selected file. \n \n Во время получения файла возникла ошибка.", 8f);
+				messageBoxController.showMessageBox("Error", "There was an error while retrieving the selected file. \n \n Во время получения файла возникла ошибка.", 8f);
 			}
 		}
 	}
