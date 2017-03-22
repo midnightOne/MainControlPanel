@@ -566,7 +566,7 @@ public class mainProgram : MonoBehaviour
 		//StopCoroutine("delayedShowMessageBox");
 	}
 
-	IEnumerator delayeddisableMessageBox (float delay)
+	IEnumerator delayedDisableMessageBox (float delay)
 	{
 		//Wait for the time defined at the delay parameter
 		yield return new WaitForSeconds (delay);  
@@ -877,6 +877,7 @@ public class mainProgram : MonoBehaviour
 
 	}
 
+	// Матрицф кнопок изменилась => пользователь что-то переключил, действуем.
 	void buttonMatrixChanged (int index, char value)
 	{
 		bool b = value == '0';
