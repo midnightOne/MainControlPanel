@@ -5,11 +5,10 @@ using System;
 using DG.Tweening;
 using UnityEngine.UI;
 
+public class mainProgram : MonoBehaviour
+{
 
-
-
-public class mainProgram : MonoBehaviour {
-
+	//States
 	const int STATE_TECH_OFF = -1;
 	const int STATE_COUNTDOWN = 0;
 	const int STATE_LOWBATTERY = 1;
@@ -19,35 +18,26 @@ public class mainProgram : MonoBehaviour {
 	const int STATE_SATELLITE_LOCKED = 5;
 	const int STATE_HACKING = 6;
 	const int STATE_HACKED = 7;
+	private int state = STATE_TECH_OFF;
+	//-
 
 	public bool standaloneDebug = false;
-
-	int testCountdown = 200;
-	int state = STATE_TECH_OFF;
-
 	public bool batteryCharged = false;
 	public bool batteryInstalled = true;
 	public bool doorOpen = false;
 	public bool codeEnteredCorrect = false;
 	public bool usbDriveConnected = false;
 	public bool satSerialOk = false;
-	//public bool codeEnteredCorrect = false;
-	//public bool codeEnteredCorrect = false;
 	public Material satelliteRed;
-
 	public GameObject textureChangeObject;
 	public GameObject unlockPanel;
 	public GameObject messageBox;
 	public GameObject inputBox;
 	public GameObject progressBar;
 	public GameObject hackWindow;
-
-	public PotRotator[] potRotators; 
-
+	public PotRotator[] potRotators;
 	public CircularSineWave wave_1;
 	public CircularSineWave wave_2;
-
-
 	private InputBoxController inputController;
 	private MessageBoxController msgController;
 	private GameObject black;
@@ -56,50 +46,34 @@ public class mainProgram : MonoBehaviour {
 	private ProgressBarController progressBarController;
 	private timer timerController;
 	private float timeStamp;
-
-	//private bool[] unlockButtonStates = {false, false, false, false, false, false};
-	//private bool[] lightLit = {false, false, false, false, false, false, false, false, false, false};
-
 	private string satSerial = "328AM5J8A";
-	private UnlockObject unlockObject; 
+	private UnlockObject unlockObject;
 	private GameObject radar;
 	private SatSearchBarController radarController;
-
 	private float joystickX = 0f;
 	private float joystickY = 0f;
-
 	private float satelliteInitialScale = 67.97f;
 	private bool satelliteEasyFind = true;
-
 	private int encoderPosition = 0;
-
-	public int[] pots= {0,0,0,0,0};
+	public int[] pots = {0,0,0,0,0};
 	public const int samples = 20;
 	private int currentReadingIndex = 0;
 	private int[,] potReadings;
-
 	private string buttonsData = "0000000000000000000000000000000000000000";
 	private bool buttonDataInitialized = false;
-
 	public WindowGrid windowGrid;
 	public Archivecontroller archieve;
-
 	private GameObject[] regions;
-
 	public Text regionLabel;
 	public Text iqLabel;
 	public Text ageLabel;
-
 	private string[] regionLabels;
 	private string[] iqLabels;
 	private string[] ageLabels;
-
 	public int regionSelect = 0;
 	public int iqSelect = 0;
 	public int ageSelect = 0;
-	
 	bool displayDemographics = false;
-
 	private GameObject BSM;
 	private GameObject AZ;
 	private GameObject Y;
@@ -111,34 +85,28 @@ public class mainProgram : MonoBehaviour {
 	private GameObject Antenna;
 	private GameObject Wifi;
 	private GameObject Sync;
-
 	private GameObject black_2;
-
 	bool SyncEnabled = false;
 	bool syncX = false;
 	bool syncY = false;
 	bool PK_Enabled = false;
 	bool BSM_Enabled = false;
 	bool AZ_Enabled = false;
-
 	bool GSM_Enabled = false;
 	bool LTE_Enabled = false;
 	bool Wifi_Enabled = false;
 	bool Antenna_Enabled = false;
 	bool Dish_Enabled = false;
 	bool Reserve_Enabled = false;
-
 	bool commsDisable = false;
 	bool firewall = false;
-
+	bool overheatSent = false;
 	private GameObject lowPowerWarning;
 	private bool lowPowerWarningOn = true;
-
 	private Text CoreTempText;
 	private float coolingEfficiency = 0;
 	private float temperature = 60f;
 
-	//private int totalLoadPoints = 0;
 
 	/**
 	 *  FROM SERIAL CLASS
@@ -146,34 +114,29 @@ public class mainProgram : MonoBehaviour {
 
 	public static int charsNumber = 20;
 	public static int transmittedCharsNumber = 3;
-
-
 	public PowerManagement powerPanel;
 	public static bool[] keyStates;
 	static bool[] prevKeyStates;
 	private SerialComm serialClass;
-
 	public Camera mainCamera;
-
-
-
 	private Process myProcess;
 	// Use this for initialization
-	void Start () {
+	void Start ()
+	{
 		print ("Target framerate = " + Application.targetFrameRate);
 		/*#if UNITY_EDITOR
 		QualitySettings.vSyncCount = 0;  // VSync must be disabled
 		Application.targetFrameRate = 30;
 		#endif*/
+		initSerial ();
+		
+		state = STATE_COUNTDOWN;
+
 
 		CircularSineWaveVis.enabled = false;
 		graphDisplay.enabled = false;
 
-		initSerial ();
-
-		state = STATE_COUNTDOWN;
-
-		black = GameObject.Find("Black");
+		black = GameObject.Find ("Black");
 		inputBox = GameObject.Find ("InputWindow");
 		satellite = GameObject.Find ("Satellite");
 		radar = GameObject.Find ("Radar");
@@ -181,10 +144,10 @@ public class mainProgram : MonoBehaviour {
 
 		//satelliteInitialScale = satellite.transform.localScale.x;
 
-		potReadings = new int[5,samples];
+		potReadings = new int[5, samples];
 		for (int i=0; i<5; i++) {
 			for (int j=0; j<samples; j++) {
-				potReadings[i,j] = 0;
+				potReadings [i, j] = 0;
 			}
 		}
 
@@ -224,32 +187,48 @@ public class mainProgram : MonoBehaviour {
 
 
 
-		regionLabels = new string[] {"All/Все", "Australia\nАвстралия","Africa\nАфрика","Eurasia\nЕвразия","South America\nЮжная Америка","North America\nСеверная Америка"};
-		iqLabels = new string[] {"All/Все","130+","115-130","100-115","85-100","0-86"};
+		regionLabels = new string[] {
+			"All/Все",
+			"Australia\nАвстралия",
+			"Africa\nАфрика",
+			"Eurasia\nЕвразия",
+			"South America\nЮжная Америка",
+			"North America\nСеверная Америка"
+		};
+		iqLabels = new string[] {
+			"All/Все",
+			"130+",
+			"115-130",
+			"100-115",
+			"85-100",
+			"0-86"
+		};
 		ageLabels = new string[] {"All/Все","60+","40-60","25-40","16-25","0-16"};
 
 		black_2 = GameObject.Find ("Black_2");
 		//unlockPanel.GetComponent<videoAnim> ().enabled = false;
 		//unlockPanel.transform.Translate(0f, 500f,0f);
 
-		lowBatteryIcon.SetActive(false);
+		lowBatteryIcon.SetActive (false);
 
-		StartCoroutine("setPanelsInactive",1.6f);
-
-	} 
-
-	void requestButtonStates(){
-		buttonsData = "0000000000000000000000000000000000000000";
-		SerialComm.WriteToArduino("#B");
+		StartCoroutine ("setPanelsInactive", 1.6f);
 
 	}
 
-	void initSerial(){
+	void requestButtonStates ()
+	{
+		buttonsData = "0000000000000000000000000000000000000000";
+		SerialComm.WriteToArduino ("#B");
+
+	}
+
+	void initSerial ()
+	{
 		keyStates = new bool[charsNumber];
-		for(int i=0;i<charsNumber;i++){
-			keyStates[i] = false;
+		for (int i=0; i<charsNumber; i++) {
+			keyStates [i] = false;
 		}
-		serialClass = gameObject.GetComponent<SerialComm>();
+		serialClass = gameObject.GetComponent<SerialComm> ();
 	}
 
 
@@ -258,19 +237,20 @@ public class mainProgram : MonoBehaviour {
 	//----------------------------------------------------------------------------------------------------
 	//            UPDATE
 
-	void calculateLoad(){
+	void calculateReactorLoad ()
+	{
 		int temp = 13;
 		
-		temp += SyncEnabled.GetHashCode()*(syncX.GetHashCode()+syncY.GetHashCode());
-		temp += PK_Enabled.GetHashCode () + BSM_Enabled.GetHashCode() + AZ_Enabled.GetHashCode();
-		temp += Reserve_Enabled.GetHashCode()*(GSM_Enabled.GetHashCode() + LTE_Enabled.GetHashCode() + Wifi_Enabled.GetHashCode() + Antenna_Enabled .GetHashCode() + Dish_Enabled.GetHashCode() );
+		temp += SyncEnabled.GetHashCode () * (syncX.GetHashCode () + syncY.GetHashCode ());
+		temp += PK_Enabled.GetHashCode () + BSM_Enabled.GetHashCode () + AZ_Enabled.GetHashCode ();
+		temp += Reserve_Enabled.GetHashCode () * (GSM_Enabled.GetHashCode () + LTE_Enabled.GetHashCode () + Wifi_Enabled.GetHashCode () + Antenna_Enabled .GetHashCode () + Dish_Enabled.GetHashCode ());
 		
 		temp += (regionSelect == 0) ? 12 : 2;
 		temp += (iqSelect == 0) ? 12 : 2;
 		temp += (ageSelect == 0) ? 12 : 2;
 		temp += firewall.GetHashCode ();
 		
-		GameObject.Find ("Loadtext").GetComponent<Text>().text = "" + temp;
+		GameObject.Find ("Loadtext").GetComponent<Text> ().text = "" + temp;
 		
 		float load = temp / 30f;
 		
@@ -280,14 +260,14 @@ public class mainProgram : MonoBehaviour {
 			lowPowerWarning.SetActive (false);
 		}
 		
-		powerPanel.cores[0].loadLevel = Mathf.Min(load/powerPanel.cores[0].powerLevel,1f);
+		powerPanel.cores [0].loadLevel = Mathf.Min (load / powerPanel.cores [0].powerLevel, 1f);
 		load -= powerPanel.cores [0].powerLevel;
-		powerPanel.cores[1].loadLevel = Mathf.Min(load/powerPanel.cores[1].powerLevel,1f);
+		powerPanel.cores [1].loadLevel = Mathf.Min (load / powerPanel.cores [1].powerLevel, 1f);
 		
 		
 		temperature += (load * powerPanel.currentCapacity);
 
-		temperature = Mathf.Clamp(temperature,0f,powerPanel.currentCapacity*(1206*0.5f));
+		temperature = Mathf.Clamp (temperature, 0f, powerPanel.currentCapacity * (1206 * 0.5f));
 
 		/*if(powerPanel.cores[0].isOn && !powerPanel.cores[1].isOn){
 			powerPanel.cores[0].loadLevel = Mathf.Min(temp/30f,1f);
@@ -303,19 +283,21 @@ public class mainProgram : MonoBehaviour {
 		
 	}
 
-	void updatePotReadings(){
+	void updatePotReadings ()
+	{
 		float temp;
-		for(int i=0;i<5;i++){
-			temp=0;
-			for(int j=0;j<samples;j++){
-				temp += potReadings[i,j];
+		for (int i=0; i<5; i++) {
+			temp = 0;
+			for (int j=0; j<samples; j++) {
+				temp += potReadings [i, j];
 			}
-			pots[i] = (int)(temp/samples);
+			pots [i] = (int)(temp / samples);
 
 		}
 	}
 
-	void updatePotVisuals(){
+	void updatePotVisuals ()
+	{
 
 		float temp = (Mathf.RoundToInt (pots [4] / 20.0f) - 25) / 10f;
 
@@ -331,59 +313,60 @@ public class mainProgram : MonoBehaviour {
 		wave_2.delay = encoderPosition * 0.1f;
 	}
 	
-	void updateSelection(){
+	void updateSelection ()
+	{
 
 		if (regionSelect == 0 && displayDemographics) {
-			for(int i=0;i<regions.Length;i++){
-				regions[i].SetActive(true);
+			for (int i=0; i<regions.Length; i++) {
+				regions [i].SetActive (true);
 			}
 		} else {
-			for(int i=0;i<regions.Length;i++){
-				if(regionSelect-1 == i && displayDemographics){
-					regions[i].SetActive(true);
+			for (int i=0; i<regions.Length; i++) {
+				if (regionSelect - 1 == i && displayDemographics) {
+					regions [i].SetActive (true);
 				} else {
-					regions[i].SetActive(false);
+					regions [i].SetActive (false);
 				}
 			}
 		}
 		//
-		regionLabel.text = regionLabels[regionSelect];
+		regionLabel.text = regionLabels [regionSelect];
 		iqLabel.text = iqLabels [iqSelect];
 		ageLabel.text = ageLabels [ageSelect];
 		//
 	}
 
-	bool overheatSent = false;
-	void calculateCooling(){
+	void calculateCooling ()
+	{
 		int temp = 0;
-		for(int i = 0; i<4;i++ ){
-			temp += pots[i];
+		for (int i = 0; i<4; i++) {
+			temp += pots [i];
 		}
 		coolingEfficiency = temp / 4000f;
 
-		GameObject.Find("CoolingEfficiency").GetComponent<Text>().text = Math.Round(coolingEfficiency*100) + " %";
+		GameObject.Find ("CoolingEfficiency").GetComponent<Text> ().text = Math.Round (coolingEfficiency * 100) + " %";
 
 		float tempCap = 1206 - coolingEfficiency * 1206;
 
 		temperature = Mathf.Clamp (temperature, 0f, tempCap);
 
-		CoreTempText.text = Mathf.Round(temperature) + " °C";
+		CoreTempText.text = Mathf.Round (temperature) + " °C";
 
-		if(temperature >= 1201 && !overheatSent){
-			SerialComm.WriteToArduino("#E");
+		if (temperature >= 1201 && !overheatSent) {
+			SerialComm.WriteToArduino ("#E");
 			mainCamera.GetComponent<CameraFilterPack_FX_Glitch1> ().enabled = true;
 			mainCamera.GetComponent<CameraFilterPack_TV_BrokenGlass> ().enabled = true;
 			overheatSent = true;
 		}
 	}
-
 	
-	void Update () {
+	void Update ()
+	{
 		UpdateSerial ();
 		updatePotReadings ();
 		updatePotVisuals ();
 		updateSelection ();
-		calculateLoad ();
+		calculateReactorLoad ();
 		calculateCooling ();
 
 		//test
@@ -391,179 +374,143 @@ public class mainProgram : MonoBehaviour {
 			Application.LoadLevel(Application.loadedLevel);
 		}*/
 
-
-		//todo delete
-		GameObject.Find ("Cube").transform.localEulerAngles = new Vector3(encoderPosition*360/44, 0, 0);
-
-		if(state == STATE_COUNTDOWN){
-			if(doorOpen){
-				showLowBattery();
+		if (state == STATE_COUNTDOWN) {
+			if (doorOpen) {
+				showLowBattery ();
 				state = STATE_LOWBATTERY;
 
 			}
 
-		} else if(state == STATE_LOWBATTERY){
-			if(!batteryInstalled){
-				fadeToBlack();
+		} else if (state == STATE_LOWBATTERY) {
+			if (!batteryInstalled) {
+				fadeToBlack ();
 				state = STATE_NOBATTERY;
 			}
-		} else if(state == STATE_NOBATTERY){
-			if(batteryInstalled){
-				fadeFromBlack();
-				if(!batteryCharged){
+		} else if (state == STATE_NOBATTERY) {
+			if (batteryInstalled) {
+				fadeFromBlack ();
+				if (!batteryCharged) {
 					state = STATE_LOWBATTERY;
 				} else {
 					state = STATE_UNLOCK_SCREEN;
-					unlockPanel.SetActive(true);
+					unlockPanel.SetActive (true);
 
 					//unlockPanel.transform.Translate(0f, -500f,0f);
 					//unlockPanel.GetComponent<videoAnim> ().enabled = true;
-					unlockPanel.GetComponent<DOTweenAnimation>().DOPlayBackwards();
+					unlockPanel.GetComponent<DOTweenAnimation> ().DOPlayBackwards ();
 					//unlockPanel.GetComponent<videoAnim>().start();
-					StartCoroutine("PlayUnlockInitAnimation",1f);
+					StartCoroutine ("PlayUnlockInitAnimation", 1f);
 
-					lowBatteryIcon.SetActive(false);
+					lowBatteryIcon.SetActive (false);
 					//GameObject.Find ("LowBatteryIcon").GetComponent<DOTweenAnimation> ().DOPlayBackwards ();
 				}
 			}
-		} else if (state == STATE_UNLOCK_SCREEN){
+		} else if (state == STATE_UNLOCK_SCREEN) {
 			unlockObject.updateButtons (keyStates);
-			if(!standaloneDebug){
+			if (!standaloneDebug) {
 				codeEnteredCorrect = unlockObject.checkComplete ();
 			}
-			if(codeEnteredCorrect){
+			if (codeEnteredCorrect) {
 				//unlockPanel.SetActive(true);
-				SerialComm.WriteToArduino("#C"); //CODE CORRECT COMMAND
+				SerialComm.WriteToArduino ("#C"); //CODE CORRECT COMMAND
 
-				unlockPanel.GetComponent<DOTweenAnimation>().DOPlayForward();
-				StartCoroutine("DisableUnlockPanel",1f);
+				unlockPanel.GetComponent<DOTweenAnimation> ().DOPlayForward ();
+				StartCoroutine ("DisableUnlockPanel", 1f);
 				state = STATE_SATELLITE_DISCONNECTED_SCREEN;
 				//StartCoroutine("delayedShowMessageBox",1f);
-				DOTween.PlayBackwards("SatelliteSearchTextFade");
+				DOTween.PlayBackwards ("SatelliteSearchTextFade");
 
-				StartCoroutine("delayedShowRadar",2f);
+				StartCoroutine ("delayedShowRadar", 2f);
 				//satellite.transform.localScale = new Vector3(0,0,0);
-				satellite.GetComponent<DOTweenAnimation>().DOPlayBackwards();
+				satellite.GetComponent<DOTweenAnimation> ().DOPlayBackwards ();
 
 
 			}
-		} else if(state == STATE_SATELLITE_DISCONNECTED_SCREEN){
+		} else if (state == STATE_SATELLITE_DISCONNECTED_SCREEN) {
 			/*if( (joystickX != 0 || joystickY != 0) && msgController.on){
 				hideMessageBox();
 			}*/
-			if(standaloneDebug){
+			if (standaloneDebug) {
 
-				joystickX = Input.GetKey(KeyCode.RightArrow).GetHashCode() + Input.GetKey(KeyCode.LeftArrow).GetHashCode()*-1;
-				joystickY = Input.GetKey(KeyCode.UpArrow).GetHashCode() + Input.GetKey(KeyCode.DownArrow).GetHashCode()*-1;
+				joystickX = Input.GetKey (KeyCode.RightArrow).GetHashCode () + Input.GetKey (KeyCode.LeftArrow).GetHashCode () * -1;
+				joystickY = Input.GetKey (KeyCode.UpArrow).GetHashCode () + Input.GetKey (KeyCode.DownArrow).GetHashCode () * -1;
 
 			}
 
-			radarController.velocity.x = joystickX*10;//+= (joystickX*10-radarController.velocity.x)*0.9f;
-			radarController.velocity.y = joystickY*10;
-			//radarController.velocity.Normalize();
-			//radarController.velocity *= 10;
+			radarController.velocity.x = joystickX * 10;//+= (joystickX*10-radarController.velocity.x)*0.9f;
+			radarController.velocity.y = joystickY * 10;
 
-			/*if(radarController.velocity.y < 10 | radarController.velocity.y > -10)
-				radarController.velocity.y += joystickY;
 
-			if(radarController.velocity.x < 10 | radarController.velocity.x > -10)
-					radarController.velocity.x += joystickX;*/
-
-			/*
-			if(Input.GetKey("up")){
-				if(radarController.velocity.y < 10)
-					radarController.velocity.y += 1;
-			} else if(Input.GetKey("down")) {
-				if(radarController.velocity.y > -10)
-					radarController.velocity.y -= 1;
-			} else {
-				radarController.velocity.y = 0;
-			}
-
-			if(Input.GetKey("right")){
-				if(radarController.velocity.x < 10)
-					radarController.velocity.x += 1;
-			} else if(Input.GetKey("left")) {
-				if(radarController.velocity.x > -10)
-					radarController.velocity.x -= 1;
-			} else {
-				radarController.velocity.x = 0;
-			}*/
-
-			if(satelliteEasyFind){
-				if(radarController.progress > 0.7f && radarController.progress < 0.95f){
+			if (satelliteEasyFind) {
+				if (radarController.progress > 0.7f && radarController.progress < 0.95f) {
 					Vector3 tempVec = satellite.transform.localScale;
-					tempVec.x = tempVec.y = tempVec.z = (radarController.progress - 0.7f)/0.3f*satelliteInitialScale;
+					tempVec.x = tempVec.y = tempVec.z = (radarController.progress - 0.7f) / 0.3f * satelliteInitialScale;
 					satellite.transform.localScale = tempVec;
 					
-				} else if(radarController.progress > 0.95f){
+				} else if (radarController.progress > 0.95f) {
 					state = STATE_SATELLITE_LOCKED;
-					SerialComm.WriteToArduino("#S"); //SATELLITE LOCKED COMMAND
+					SerialComm.WriteToArduino ("#S"); //SATELLITE LOCKED COMMAND
 					radarController.locked = true;
-					satellite.transform.localScale = new Vector3(satelliteInitialScale,satelliteInitialScale,satelliteInitialScale);
+					satellite.transform.localScale = new Vector3 (satelliteInitialScale, satelliteInitialScale, satelliteInitialScale);
 					//satellite.GetComponent<DOTweenAnimation>().DOPlayForward();
 					//DOTween.PlayForward ("satelliteShow");
-					DOTween.PlayForward("SatelliteSearchTextFade");
-					if(!windowGrid.enabled){
+					DOTween.PlayForward ("SatelliteSearchTextFade");
+					if (!windowGrid.enabled) {
 						windowGrid.enabled = true;
 					}
 				} 
 			} else {
-				if(radarController.progress > 0.95f){
+				if (radarController.progress > 0.95f) {
 					state = STATE_SATELLITE_LOCKED;
-					SerialComm.WriteToArduino("#S"); //SATELLITE LOCKED COMMAND
+					SerialComm.WriteToArduino ("#S"); //SATELLITE LOCKED COMMAND
 					radarController.locked = true;
-					satellite.transform.localScale = new Vector3(satelliteInitialScale,satelliteInitialScale,satelliteInitialScale);
+					satellite.transform.localScale = new Vector3 (satelliteInitialScale, satelliteInitialScale, satelliteInitialScale);
 					//satellite.GetComponent<DOTweenAnimation>().DOPlayForward();
-					DOTween.PlayForward("SatelliteSearchTextFade");
+					DOTween.PlayForward ("SatelliteSearchTextFade");
 					//DOTween.PlayForward ("satelliteShow");
-					if(!windowGrid.enabled){
+					if (!windowGrid.enabled) {
 						windowGrid.enabled = true;
 					}
 				} 
 			}
-		} else if(state == STATE_SATELLITE_LOCKED){
-			//Vector3 temp = satellite.transform.position - radar.transform.position;
-			//temp.z = 0;
-			
-			//print(satellite.transform.position + " - " + radar.transform.position + " = " + temp);
+		} else if (state == STATE_SATELLITE_LOCKED) {
 
-			if(usbDriveConnected){
+			if (usbDriveConnected) {
 				state = STATE_HACKING;
-				hackWindow.SetActive(true);
-				progressBar.SetActive(true);
+				hackWindow.SetActive (true);
+				progressBar.SetActive (true);
 				DOTween.PlayBackwards ("progressBarHide");
 				DOTween.PlayBackwards ("hackWindowHide");
-				progressBarController.setTitle("Hacking satellite...", "Взлом спутника...");
+				progressBarController.setTitle ("Hacking satellite...", "Взлом спутника...");
 
 			}
-		} else if(state == STATE_HACKING){
-			if(progressBarController.progress < 0.32){
+		} else if (state == STATE_HACKING) {
+			if (progressBarController.progress < 0.32) {
 
-				progressBarController.progress += UnityEngine.Random.value*0.005f;
+				progressBarController.progress += UnityEngine.Random.value * 0.005f;
 
-			} else if(progressBarController.progress < 1){
-				if(!satSerialOk && !inputBox.activeSelf){
-					inputBox.SetActive(true);
-					inputBox.GetComponent<DOTweenAnimation>().DOPlayBackwards();
-					inputController.createInputBox("Input satellite serial #");
+			} else if (progressBarController.progress < 1) {
+				if (!satSerialOk && !inputBox.activeSelf) {
+					inputBox.SetActive (true);
+					inputBox.GetComponent<DOTweenAnimation> ().DOPlayBackwards ();
+					inputController.createInputBox ("Input satellite serial #");
 					//StartCoroutine("delayedShowMessageBox",1f);
 				}
 
 
-				if(satSerialOk){
-					progressBarController.progress += UnityEngine.Random.value*0.005f;
+				if (satSerialOk) {
+					progressBarController.progress += UnityEngine.Random.value * 0.005f;
 				} else {
-					if(inputController.inputString.Length == satSerial.Length){
-						if(inputController.inputString == satSerial){
+					if (inputController.inputString.Length == satSerial.Length) {
+						if (inputController.inputString == satSerial) {
 							satSerialOk = true;
 							//remove inputbox
-							inputBox.GetComponent<DOTweenAnimation>().DOPlayForward();
-							StartCoroutine("delayedDisableInputBox",1f);
+							inputBox.GetComponent<DOTweenAnimation> ().DOPlayForward ();
+							StartCoroutine ("delayedDisableInputBox", 1f);
 						} else {
 							//replace title with "try again" and clear input field
-							inputController.changeTitle("Try again",true);
-							inputController.clear();
+							inputController.changeTitle ("Try again", true);
+							inputController.clear ();
 						}
 					}
 
@@ -574,82 +521,71 @@ public class mainProgram : MonoBehaviour {
 				timerController.paused = true;
 
 				//AudioController.Play("SatelliteRollback");
-				foreach (Transform child in satellite.transform)
-				{
+				foreach (Transform child in satellite.transform) {
 					//child is your child transform
-					child.gameObject.GetComponent<Renderer>().material = satelliteRed;
+					child.gameObject.GetComponent<Renderer> ().material = satelliteRed;
 				}
 				state = STATE_HACKED;
-				StartCoroutine("delayedStartSatReboot");
+				StartCoroutine ("delayedStartSatReboot");
 				DOTween.PlayForward ("progressBarHide");
 				DOTween.PlayForward ("hackWindowHide");
 				progressBarController.progress = 0;
-				GameObject.Find("HackingVideo").GetComponent<videoAnim>().pause();
+				GameObject.Find ("HackingVideo").GetComponent<videoAnim> ().pause ();
 				//TEST OVERHEAT FROM FLASH
-				if(!overheatSent){
-					SerialComm.WriteToArduino("#E");
+				if (!overheatSent) {
+					SerialComm.WriteToArduino ("#E");
 					mainCamera.GetComponent<CameraFilterPack_FX_Glitch1> ().enabled = true;
 					mainCamera.GetComponent<CameraFilterPack_TV_BrokenGlass> ().enabled = true;
 					overheatSent = true;
 				}
 			}
 
-		} else if(state == STATE_HACKED){
-			progressBarController.progress = 1-timerController.timeLeft ()/timeStamp;
+		} else if (state == STATE_HACKED) {
+			progressBarController.progress = 1 - timerController.timeLeft () / timeStamp;
 		}
 
-
-		// SHOW PROGRESSBAR
-		//DOTween.PlayBackwards ("progressBarHide");
-
-
-
-
-		if (testCountdown > 0) {
-			testCountdown--;
-		} else if (testCountdown == 0){
-			//showLowBattery();
-			testCountdown--;
-		}
-	}
-
-	public void showMessageBox(string title, string text, float stayFor=2f){
-		if (msgController.on) {
-			StopCoroutine("delayedhideMessageBox");
-			msgController.createMessageBox(title, text);
-		} else {
-			messageBox.SetActive(true);
-			messageBox.GetComponent<DOTweenAnimation>().DOPlayBackwards();
-			msgController.createMessageBox(title, text);
-		}
-
-		StartCoroutine("delayedhideMessageBox",stayFor);
 
 	}
 
-	IEnumerator delayedhideMessageBox(float delay)
+	public void showMessageBox (string title, string text, float stayFor=2f)
 	{
-		yield return new WaitForSeconds(delay);  
+		if (msgController.on) {
+			StopCoroutine ("delayedhideMessageBox");
+			msgController.createMessageBox (title, text);
+		} else {
+			messageBox.SetActive (true);
+			messageBox.GetComponent<DOTweenAnimation> ().DOPlayBackwards ();
+			msgController.createMessageBox (title, text);
+		}
+
+		StartCoroutine ("delayedhideMessageBox", stayFor);
+
+	}
+
+	IEnumerator delayedhideMessageBox (float delay)
+	{
+		yield return new WaitForSeconds (delay);  
 		hideMessageBox ();
 		yield break;
 
 	}
 
-	void hideMessageBox(){
-		messageBox.GetComponent<DOTweenAnimation>().DOPlayForward();
-		StartCoroutine("delayeddisableMessageBox",1f);
+	void hideMessageBox ()
+	{
+		messageBox.GetComponent<DOTweenAnimation> ().DOPlayForward ();
+		StartCoroutine ("delayeddisableMessageBox", 1f);
 	}
 
-	IEnumerator delayedStartSatReboot()
+	IEnumerator delayedStartSatReboot ()
 	{
 		//Wait for the time defined at the delay parameter
-		yield return new WaitForSeconds(10); 
-		AudioController.Play("SatelliteRollback");
-		yield return new WaitForSeconds(2);
-		progressBarController.setTitle("Rolling back satellite...", "Восстановление спутника...");
+		yield return new WaitForSeconds (10); 
+		AudioController.Play ("SatelliteRollback");
+		yield return new WaitForSeconds (2);
+		progressBarController.setTitle ("Rolling back satellite...", "Восстановление спутника...");
 		DOTween.PlayBackwards ("progressBarHide");
 		timerController.paused = false;
-		DOTween.Play("progressBarMove");
+		DOTween.Play ("progressBarMove");
 		timeStamp = timerController.timeLeft ();
 
 		//Stop this coroutine
@@ -657,14 +593,14 @@ public class mainProgram : MonoBehaviour {
 		//StopCoroutine("delayedShowMessageBox");
 	}
 
-	IEnumerator delayedShowMessageBox(float delay)
+	IEnumerator delayedShowMessageBox (float delay)
 	{
 		//Wait for the time defined at the delay parameter
-		yield return new WaitForSeconds(delay);  
+		yield return new WaitForSeconds (delay);  
 		
-		messageBox.SetActive(true);
-		messageBox.GetComponent<DOTweenAnimation>().DOPlayBackwards();
-		msgController.createMessageBox("Satellite disconnected", "Please use the joystick to move radar. The radar will show proximity of satellite by the number of green dots.");
+		messageBox.SetActive (true);
+		messageBox.GetComponent<DOTweenAnimation> ().DOPlayBackwards ();
+		msgController.createMessageBox ("Satellite disconnected", "Please use the joystick to move radar. The radar will show proximity of satellite by the number of green dots.");
 
 		
 		//Stop this coroutine
@@ -672,36 +608,34 @@ public class mainProgram : MonoBehaviour {
 		//StopCoroutine("delayedShowMessageBox");
 	}
 
-	IEnumerator delayeddisableMessageBox(float delay)
+	IEnumerator delayeddisableMessageBox (float delay)
 	{
 		//Wait for the time defined at the delay parameter
-		yield return new WaitForSeconds(delay);  
+		yield return new WaitForSeconds (delay);  
 		
-		messageBox.SetActive(false);
+		messageBox.SetActive (false);
 		msgController.on = false;
 		//Stop this coroutine
 		yield break;
 		//StopCoroutine("delayedShowMessageBox");
 	}
 
-	IEnumerator delayedDisableInputBox(float delay)
+	IEnumerator delayedDisableInputBox (float delay)
 	{
 		//Wait for the time defined at the delay parameter
-		yield return new WaitForSeconds(delay);  
+		yield return new WaitForSeconds (delay);  
 		
-		inputBox.SetActive(false);
+		inputBox.SetActive (false);
 		
 		//Stop this coroutine
 		yield break;
 		//StopCoroutine("delayedShowMessageBox");
 	}
 
-
-
-	IEnumerator delayedShowRadar(float delay)
+	IEnumerator delayedShowRadar (float delay)
 	{
 		//Wait for the time defined at the delay parameter
-		yield return new WaitForSeconds(delay);  
+		yield return new WaitForSeconds (delay);  
 		
 		DOTween.Play ("SatSearchBarShow");
 		
@@ -709,19 +643,18 @@ public class mainProgram : MonoBehaviour {
 		yield break;
 		//StopCoroutine("delayedShowRadar");
 	}
-
 	
-	IEnumerator delayedCall(Action function, float delay)
+	IEnumerator delayedCall (Action function, float delay)
 	{ 
-		yield return new WaitForSeconds(delay); 
+		yield return new WaitForSeconds (delay); 
 		function ();
 		yield break;
 	}
 
-	IEnumerator setPanelsInactive(float delay)
+	IEnumerator setPanelsInactive (float delay)
 	{
 		//Wait for the time defined at the delay parameter
-		yield return new WaitForSeconds(delay);  
+		yield return new WaitForSeconds (delay);  
 		
 		unlockPanel.SetActive (false);
 		messageBox.SetActive (false);
@@ -736,10 +669,10 @@ public class mainProgram : MonoBehaviour {
 		//StopCoroutine("setUnlockPanelInactive");
 	}
 
-	IEnumerator PlayUnlockInitAnimation(float delay)
+	IEnumerator PlayUnlockInitAnimation (float delay)
 	{
 		//Wait for the time defined at the delay parameter
-		yield return new WaitForSeconds(delay);  
+		yield return new WaitForSeconds (delay);  
 		
 		unlockPanel.GetComponent<videoAnim> ().start ();
 		
@@ -748,10 +681,10 @@ public class mainProgram : MonoBehaviour {
 		//StopCoroutine("PlayUnlockInitAnimation");
 	}
 
-	IEnumerator DisableUnlockPanel(float delay)
+	IEnumerator DisableUnlockPanel (float delay)
 	{
 		//Wait for the time defined at the delay parameter
-		yield return new WaitForSeconds(delay);  
+		yield return new WaitForSeconds (delay);  
 		
 		unlockPanel.SetActive (false);
 		
@@ -764,72 +697,77 @@ public class mainProgram : MonoBehaviour {
 	// 
 
 
-	void animateForward(string objectName){
-		DOTweenAnimation[] tweens = GameObject.Find(objectName).GetComponents<DOTweenAnimation>();
+	void animateForward (string objectName)
+	{
+		DOTweenAnimation[] tweens = GameObject.Find (objectName).GetComponents<DOTweenAnimation> ();
 
 		foreach (DOTweenAnimation tween in tweens) {
-			tween.DOPlayForward();
+			tween.DOPlayForward ();
 		}
 	}
 
-	void animateBack(string objectName){
-		DOTweenAnimation[] tweens = GameObject.Find(objectName).GetComponents<DOTweenAnimation>();
+	void animateBack (string objectName)
+	{
+		DOTweenAnimation[] tweens = GameObject.Find (objectName).GetComponents<DOTweenAnimation> ();
 		
 		foreach (DOTweenAnimation tween in tweens) {
-			tween.DOPlayBackwards();
+			tween.DOPlayBackwards ();
 		}
 	}
 
-
-
-
-	void fadeToBlack(){
+	void fadeToBlack ()
+	{
 		black.GetComponent<DOTweenAnimation> ().DOPlayBackwards ();
 	}
 
-	void fadeFromBlack(){
+	void fadeFromBlack ()
+	{
 		black.GetComponent<DOTweenAnimation> ().DOPlayForward ();
 		//print("FADE FROM BLACK -------------------");
 	}
 
-	void showLowBattery(){
-		lowBatteryIcon.SetActive(true);
+	void showLowBattery ()
+	{
+		lowBatteryIcon.SetActive (true);
 		foreach (DOTweenAnimation ease in GameObject.Find ("CanvasObj").GetComponents<DOTweenAnimation> ()) {
-			ease.DOPlay();
+			ease.DOPlay ();
 		}
 		GameObject.Find ("LowBatteryIcon").GetComponent<DOTweenAnimation> ().DOPlay ();
 	}
 
-	void startRainmeter(){
+	void startRainmeter ()
+	{
 
-		myProcess = new Process();
-		myProcess.StartInfo.FileName = System.Environment.ExpandEnvironmentVariables(@"%PROGRAMFILES%\Rainmeter\Rainmeter.exe");
-		myProcess.Start();
+		myProcess = new Process ();
+		myProcess.StartInfo.FileName = System.Environment.ExpandEnvironmentVariables (@"%PROGRAMFILES%\Rainmeter\Rainmeter.exe");
+		myProcess.Start ();
 
 
 	}
 
-	void stopRainmeter(){
+	void stopRainmeter ()
+	{
 		foreach (Process p in Process.GetProcessesByName("Rainmeter")) {
-			p.CloseMainWindow();
+			p.CloseMainWindow ();
 		}
-	}             
+	}
 
-	void UpdateSerial () {
+	void UpdateSerial ()
+	{
 		//return;
 		//int data=0;
-		for(int j=0;j<5;j++){
+		for (int j=0; j<5; j++) {
 
 			string tempString = serialClass.ReadFromArduino ();
 			//print (tempString);
-			GameObject.Find("debugText").GetComponent<Text>().text = tempString;
+			//GameObject.Find ("debugText").GetComponent<Text> ().text = tempString;
 			string[] stringArray;
 
 
 			if (tempString != null) {
 				if (tempString.StartsWith ("S")) { //Start quest
 					timerController.paused = false;
-					timerController.setStartTime();
+					timerController.setStartTime ();
 				} else if (tempString.StartsWith ("k") && tempString.Length >= transmittedCharsNumber) { //key
 					if (tempString.StartsWith ("k--")) {
 						for (int i =0; i<keyStates.Length; i++) {
@@ -895,8 +833,8 @@ public class mainProgram : MonoBehaviour {
 					
 				} else if (tempString.StartsWith ("J")) { // JOYSTICK UPDATE
 
-					if(state >= STATE_SATELLITE_LOCKED){
-						SerialComm.WriteToArduino("#S"); //SATELLITE LOCKED COMMAND
+					if (state >= STATE_SATELLITE_LOCKED) {
+						SerialComm.WriteToArduino ("#S"); //SATELLITE LOCKED COMMAND
 					}
 
 					joystickX = (hexToDec (tempString.Substring (1, 1)) - 7) / 7f;
@@ -908,18 +846,13 @@ public class mainProgram : MonoBehaviour {
 					
 					encoderPosition = int.Parse (tempString.Substring (1)); 
 
-					//joystickX = (hexToDec(tempString.Substring(1,1)) - 7)/7f;
-					//joystickY = (hexToDec(tempString.Substring(2,1)) - 7)/7f;
-					
-					//joystickX = ((int)Char.GetNumericValue (tempString [1]) - 4)/4f;
-					//joystickY = ((int)Char.GetNumericValue (tempString [2]) - 4)/4f;
 				} else if (tempString.StartsWith ("P")) {
 					stringArray = tempString.Substring (1).Split ('P');
 					
 					if (stringArray.Length >= 5) {
 						for (int i=0; i<5; i++) {
 							potReadings [i, currentReadingIndex] = int.Parse (stringArray [i]);
-							//pots[i] = int.Parse(stringArray[i]);
+
 							if (potRotators [i] != null) {
 								potRotators [i].value = potReadings [i, currentReadingIndex];
 							}
@@ -927,23 +860,19 @@ public class mainProgram : MonoBehaviour {
 						currentReadingIndex = (currentReadingIndex + 1) % samples;
 					}
 				} else if (tempString.StartsWith (">")) {
-					//tempString = tempString.Substring (1); 
+
 					tempString = longHexToBin (tempString.Substring (1));
 					
-					while(tempString.Length < 40)
-					{
+					while (tempString.Length < 40) {
 						tempString += '0';
 					}
-					//print(tempString);
-					/*while(tempString.Length < 64){
-						tempString = "0" + tempString;
-					}*/
+
 
 					if (buttonsData.Length != tempString.Length) {
 						buttonsData = tempString;
-						//print(buttonsData.Length);
+
 					} else {
-						//print(tempString);
+
 						for (int i=0; i<tempString.Length; i++) {
 							if (buttonsData [i] != tempString [i] || !buttonDataInitialized) {
 								buttonMatrixChanged (i, tempString [i]);
@@ -969,8 +898,8 @@ public class mainProgram : MonoBehaviour {
 					}
 				}
 
-				if(tempString.StartsWith ("<")){
-					Application.LoadLevel(Application.loadedLevel);
+				if (tempString.StartsWith ("<")) {
+					Application.LoadLevel (Application.loadedLevel);
 				}
 
 
@@ -987,16 +916,11 @@ public class mainProgram : MonoBehaviour {
 			}
 			
 		}
-		/*for(int i = 0;i<keyNumber;i++){
 
-			if(keyStates[i] != prevKeyStates[i]){
-
-			}
-
-		}*/
 	}
 
-	void buttonMatrixChanged(int index, char value){
+	void buttonMatrixChanged (int index, char value)
+	{
 		bool b = value == '0';
 		//windowGrid
 		if (index == 4) { // охлаждение
@@ -1105,55 +1029,35 @@ public class mainProgram : MonoBehaviour {
 		} else if (index == 26) { //Reserve CH
 			b = !b;
 			Reserve_Enabled = b;
-			GSM.SetActive(b && GSM_Enabled);
-			LTE.SetActive(b && LTE_Enabled);
-			Wifi.SetActive(b && Wifi_Enabled);
-			Antenna.SetActive(b && Antenna_Enabled);
-			Dish.SetActive(b && Dish_Enabled);
+			GSM.SetActive (b && GSM_Enabled);
+			LTE.SetActive (b && LTE_Enabled);
+			Wifi.SetActive (b && Wifi_Enabled);
+			Antenna.SetActive (b && Antenna_Enabled);
+			Dish.SetActive (b && Dish_Enabled);
 
 		} else if (index == 28) { //GSM
-			GSM.SetActive(b && Reserve_Enabled);
+			GSM.SetActive (b && Reserve_Enabled);
 			GSM_Enabled = b;
 		} else if (index == 29) { //LTE
-			LTE.SetActive(b && Reserve_Enabled);
+			LTE.SetActive (b && Reserve_Enabled);
 			LTE_Enabled = b;
 		} else if (index == 30) { //Wifi
-			Wifi.SetActive(b && Reserve_Enabled);
+			Wifi.SetActive (b && Reserve_Enabled);
 			Wifi_Enabled = b;
 		} else if (index == 31) { //Antenna-Radio
-			Antenna.SetActive(b && Reserve_Enabled);
+			Antenna.SetActive (b && Reserve_Enabled);
 			Antenna_Enabled = b;
 		} else if (index == 27) { //Dish(sat)
-			Dish.SetActive(b && Reserve_Enabled);
+			Dish.SetActive (b && Reserve_Enabled);
 			Dish_Enabled = b;
-		} else if(index == 16){
-			commsDisable  = !b;
+		} else if (index == 16) {
+			commsDisable = !b;
 
-		} else if(index == 17){
+		} else if (index == 17) {
 			firewall = !b;
 		}
 
 
-		/*
-		bool SyncEnabled = false;
-		bool syncX = false;
-		bool syncY = false;
-		bool PK_Enabled = false;
-		bool BSM_Enabled = false;
-		bool AZ_Enabled = false;
-
-		bool GSM_Enabled = false;
-		bool LTE_Enabled = false;
-		bool Wifi_Enabled = false;
-		bool Antenna_Enabled = false;
-		bool Dish_Enabled = false;
-		bool Reserve_Enabled = false;
-
-		 * 
-		 * */
-
-
-		//
 	} 
 
 	/*
@@ -1214,30 +1118,35 @@ public class mainProgram : MonoBehaviour {
 	 * 
 	 * */
 
-	public void dropCapsule(){
-		SerialComm.WriteToArduino("#D"); //CODE CORRECT COMMAND
+	public void dropCapsule ()
+	{
+		SerialComm.WriteToArduino ("#D"); //CODE CORRECT COMMAND
 	}
 
-
-	string decToBin(string dec){
-		return System.Convert.ToString(System.Convert.ToInt64(dec),2);
+	string decToBin (string dec)
+	{
+		return System.Convert.ToString (System.Convert.ToInt64 (dec), 2);
 	}
 	
-	string hexToBin(string hex){
-		return System.Convert.ToString(int.Parse(hex, System.Globalization.NumberStyles.HexNumber),2);
-	}
-	string longHexToBin(string hex){
-		return Reverse(System.Convert.ToString(long.Parse(hex, System.Globalization.NumberStyles.HexNumber),2));
-	}
-
-	string Reverse( string s )
+	string hexToBin (string hex)
 	{
-		char[] charArray = s.ToCharArray();
-		Array.Reverse( charArray );
-		return new string( charArray );
+		return System.Convert.ToString (int.Parse (hex, System.Globalization.NumberStyles.HexNumber), 2);
 	}
 
-	int hexToDec(string hex){
-		return int.Parse(hex, System.Globalization.NumberStyles.HexNumber);
+	string longHexToBin (string hex)
+	{
+		return Reverse (System.Convert.ToString (long.Parse (hex, System.Globalization.NumberStyles.HexNumber), 2));
+	}
+
+	string Reverse (string s)
+	{
+		char[] charArray = s.ToCharArray ();
+		Array.Reverse (charArray);
+		return new string (charArray);
+	}
+
+	int hexToDec (string hex)
+	{
+		return int.Parse (hex, System.Globalization.NumberStyles.HexNumber);
 	}
 }
